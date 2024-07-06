@@ -1,7 +1,7 @@
 /**
  * JavaScript Route Explorer designed to discover and analyze JavaScript routes and endpoints.
  * It intelligently scans JavaScript files to detect hidden or non-standard endpoints, aiding in thorough exploration of web assets.
- * Features include duplicate removal, customizable scan types ('Balanced', 'Deep', 'Custom'), and highlighting of key terms within JavaScript files.
+ * Features include duplicate removal, customizable scan types ('High', 'Deep', 'Custom'), and highlighting of key terms within JavaScript files.
  * Users can define their own regex patterns for more targeted scanning and annotate results with custom words for enhanced visibility.
  * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
  **/
