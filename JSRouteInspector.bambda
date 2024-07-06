@@ -1,0 +1,112 @@
+/**
+ * JavaScript Route Explorer designed to discover and analyze JavaScript routes and endpoints.
+ * It intelligently scans JavaScript files to detect hidden or non-standard endpoints, aiding in thorough exploration of web assets.
+ * Features include duplicate removal, customizable scan types ('Balanced', 'Deep', 'Custom'), and highlighting of key terms within JavaScript files.
+ * Users can define their own regex patterns for more targeted scanning and annotate results with custom words for enhanced visibility.
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ **/
+
+
+
+
+boolean manualColorHighlightEnabled = true;
+String scanType = "High"; // Can be 'High', 'Deep', 'Custom'
+String customRegex = "[Your custom regex here]"; // User-defined custom regex
+Set<String> uniqueEndpoints = new HashSet<>();
+
+if (!requestResponse.hasResponse()) {
+    return false;
+}
+
+MimeType responseType = requestResponse.response().mimeType();
+boolean isJavaScript = responseType == MimeType.SCRIPT;
+
+if (!isJavaScript) {
+    return false;
+}
+
+Pattern regexPattern;
+switch (scanType) {
+    case "High":
+        regexPattern = Pattern.compile("(?<=(\"|'|`))\\/[a-zA-Z0-9_:?&=/\\-#.]*(?=(\"|'|`))", Pattern.DOTALL);
+        break;
+    case "Deep":
+        regexPattern = Pattern.compile("(?<=(\"|'|`))[^\"'`]*\\/[a-zA-Z0-9_:?&=/\\-#.]*(?=(\"|'|`))", Pattern.DOTALL);
+        break;
+    case "Custom":
+        regexPattern = Pattern.compile(customRegex, Pattern.DOTALL);
+        break;
+    default:
+        return false; 
+}
+
+String responseBody = requestResponse.response().bodyToString();
+Matcher matcher = regexPattern.matcher(responseBody);
+
+while (matcher.find()) {
+    String item = matcher.group();
+    if (!item.equals("/") && !item.equals("//") && !item.matches(".*\\.(css|png|gif|svg|woff2|jpeg|jpg|ico|bmp|woff)$")) {
+        uniqueEndpoints.add(item);
+    }
+}
+
+String dataFilePath = "C:\\Users\\Your\\Path\\File.txt";
+
+// Write endpoints to the file
+try (BufferedWriter writer = new BufferedWriter(new FileWriter(dataFilePath, true))) {
+    for (String endpoint : uniqueEndpoints) {
+        if (!endpoint.trim().isEmpty()) {
+            writer.write(endpoint + "\n");
+        }
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+}
+
+// Read the file, remove duplicates and empty lines, and rewrite
+try {
+    Set<String> lines = new LinkedHashSet<>();
+    try (BufferedReader reader = new BufferedReader(new FileReader(dataFilePath))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (!line.trim().isEmpty()) {
+                lines.add(line);
+            }
+        }
+    }
+
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(dataFilePath))) {
+        for (String uniqueLine : lines) {
+            writer.write(uniqueLine + "\n");
+        }
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+}
+
+boolean foundItems = !uniqueEndpoints.isEmpty();
+boolean highValueWordFound = false;
+StringBuilder notesBuilder = new StringBuilder();
+String[] highValueWords = {"debug", "admin", "test", "config"};
+
+// Check for high-value words and append notes
+for (String item : uniqueEndpoints) {
+    for (String word : highValueWords) {
+        if (item.contains(word)) {
+            highValueWordFound = true;
+            notesBuilder.append(item).append("\n");
+            break;
+        }
+    }
+}
+
+// Set the appropriate highlight color
+if (foundItems && manualColorHighlightEnabled) {
+    HighlightColor highlightColor = highValueWordFound ? HighlightColor.RED : HighlightColor.YELLOW;
+    requestResponse.annotations().setHighlightColor(highlightColor);
+    if (notesBuilder.length() > 0) {
+        requestResponse.annotations().setNotes(notesBuilder.toString().trim());
+    }
+}
+
+return foundItems;
