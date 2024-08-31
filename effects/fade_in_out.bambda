@@ -1,0 +1,87 @@
+/**
+ * A custom filter Bambda that creates a fade in/out effect for the Burp Suite.
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ **/
+
+
+
+if (started) {
+    return true;
+}
+
+java.awt.EventQueue.invokeLater(() -> {
+    javax.swing.JFrame targetWindow = (javax.swing.JFrame) Arrays.stream(java.awt.Window.getWindows())
+            .filter(window -> window instanceof javax.swing.JFrame && window.isVisible())
+            .findFirst()
+            .orElse(null);
+
+    if (targetWindow == null) {
+        return;
+    }
+
+    //  semi-transparent overlay panel
+    class FadePanel extends javax.swing.JPanel {
+        private float opacity = 0.0f;
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            java.awt.Graphics2D g2d = (java.awt.Graphics2D) g.create();
+            g2d.setColor(new java.awt.Color(0, 0, 0, (int)(opacity * 255)));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            g2d.dispose();
+        }
+
+        public void setFadeOpacity(float opacity) {
+            this.opacity = opacity;
+            repaint();
+        }
+    }
+
+    FadePanel overlayPanel = new FadePanel();
+    overlayPanel.setOpaque(false);
+    targetWindow.setGlassPane(overlayPanel);
+    overlayPanel.setVisible(true);
+
+    // timer for the fade effect
+    javax.swing.Timer timer = new javax.swing.Timer(50, new java.awt.event.ActionListener() {
+        float opacity = 0.0f;
+        boolean fadeOut = false;
+
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            if (fadeOut) {
+                opacity -= 0.05f;
+                if (opacity <= 0.0f) {
+                    fadeOut = false;
+                }
+            } else {
+                opacity += 0.05f;
+                if (opacity >= 0.8f) {
+                    fadeOut = true;
+                }
+            }
+
+            overlayPanel.setFadeOpacity(Math.max(0.0f, Math.min(opacity, 0.8f)));
+        }
+    });
+
+    targetWindow.getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(javax.swing.KeyStroke.getKeyStroke("F12"), "stopEffect");
+    targetWindow.getRootPane().getActionMap().put("stopEffect", new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            timer.stop();
+            overlayPanel.setVisible(false);
+            started = false;
+        }
+    });
+
+    timer.start();
+});
+
+started = true;
+return true;
+}
+boolean started = false;
+{
