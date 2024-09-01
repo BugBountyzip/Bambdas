@@ -1,0 +1,109 @@
+/**
+ * Bambda's custom glitch effect: Adds a unique glitch visual for Burp Suite. Toggle with F12.
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ **/
+
+if (started) {
+    return true;
+}
+
+java.awt.EventQueue.invokeLater(() -> {
+    javax.swing.JFrame targetWindow = (javax.swing.JFrame) java.util.Arrays.stream(java.awt.Window.getWindows())
+        .filter(window -> window instanceof javax.swing.JFrame && window.isVisible())
+        .findFirst()
+        .orElse(null);
+
+    if (targetWindow == null) {
+        return;
+    }
+
+    class GlitchPanel extends javax.swing.JPanel {
+        private java.awt.image.BufferedImage glitchImage;
+        private boolean glitchActive = false;
+        private java.util.Random random = new java.util.Random();
+        private javax.swing.Timer glitchTimer;
+
+        public GlitchPanel() {
+            setOpaque(false);
+            glitchTimer = new javax.swing.Timer(100, e -> createAndApplyGlitch());
+        }
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            if (glitchActive && glitchImage != null) {
+                g.drawImage(glitchImage, 0, 0, null);
+            }
+        }
+
+        public void toggleGlitch() {
+            glitchActive = !glitchActive;
+            if (glitchActive) {
+                glitchTimer.start();
+            } else {
+                glitchTimer.stop();
+                glitchImage = null;
+            }
+            repaint();
+        }
+
+        private void createAndApplyGlitch() {
+            java.awt.image.BufferedImage screenshot = new java.awt.image.BufferedImage(getWidth(), getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            targetWindow.paint(screenshot.getGraphics());
+
+            glitchImage = new java.awt.image.BufferedImage(getWidth(), getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g2d = glitchImage.createGraphics();
+
+            
+            g2d.drawImage(screenshot, 0, 0, null);
+
+            // Apply random glitch effects
+            for (int i = 0; i < 5; i++) {
+                int x1 = random.nextInt(getWidth());
+                int y1 = random.nextInt(getHeight());
+                int x2 = random.nextInt(getWidth());
+                int y2 = random.nextInt(getHeight());
+                int w = random.nextInt(100) + 50;
+                int h = random.nextInt(50) + 10;
+
+                g2d.drawImage(screenshot, x1, y1, x1 + w, y1 + h, x2, y2, x2 + w, y2 + h, null);
+            }
+
+            // Add some color distortion
+            for (int i = 0; i < 3; i++) {
+                int x = random.nextInt(getWidth());
+                int y = random.nextInt(getHeight());
+                int w = random.nextInt(100) + 50;
+                int h = random.nextInt(50) + 10;
+
+                g2d.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.5f));
+                g2d.setColor(new java.awt.Color(random.nextFloat(), random.nextFloat(), random.nextFloat()));
+                g2d.fillRect(x, y, w, h);
+            }
+
+            g2d.dispose();
+            repaint();
+        }
+    }
+
+    GlitchPanel glitchPanel = new GlitchPanel();
+    targetWindow.setGlassPane(glitchPanel);
+
+    targetWindow.getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(javax.swing.KeyStroke.getKeyStroke("F12"), "toggleGlitch");
+    targetWindow.getRootPane().getActionMap().put("toggleGlitch", new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            glitchPanel.toggleGlitch();
+        }
+    });
+
+    glitchPanel.setVisible(true);
+});
+
+started = true;
+return true;
+}
+
+boolean started = false;
+{
