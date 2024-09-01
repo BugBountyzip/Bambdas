@@ -1,0 +1,89 @@
+/**
+ * Adds a privacy screen overlay for Burp Suite. 
+ * The overlay can be toggled on/off using the F12 key.
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ **/
+
+if (started) {
+    return true;
+}
+
+java.awt.EventQueue.invokeLater(() -> {
+    javax.swing.JFrame targetWindow = (javax.swing.JFrame) java.util.Arrays.stream(java.awt.Window.getWindows())
+        .filter(window -> window instanceof javax.swing.JFrame && window.isVisible())
+        .findFirst()
+        .orElse(null);
+
+    if (targetWindow == null) {
+        return;
+    }
+
+    class PixelatePanel extends javax.swing.JPanel {
+        private boolean effectEnabled = false;
+        private java.awt.image.BufferedImage pixelatedImage;
+        private static final int PIXEL_SIZE = 10;
+
+        public PixelatePanel() {
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            if (effectEnabled && pixelatedImage != null) {
+                g.drawImage(pixelatedImage, 0, 0, null);
+            }
+        }
+
+        public void setEffectEnabled(boolean enabled) {
+            this.effectEnabled = enabled;
+            if (enabled) {
+                createPixelatedImage();
+            }
+            repaint();
+        }
+
+        private void createPixelatedImage() {
+            java.awt.image.BufferedImage screenshot = new java.awt.image.BufferedImage(getWidth(), getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            targetWindow.paint(screenshot.getGraphics());
+
+            pixelatedImage = new java.awt.image.BufferedImage(getWidth(), getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g2d = pixelatedImage.createGraphics();
+
+            for (int x = 0; x < getWidth(); x += PIXEL_SIZE) {
+                for (int y = 0; y < getHeight(); y += PIXEL_SIZE) {
+                    int rgb = screenshot.getRGB(Math.min(x + PIXEL_SIZE/2, getWidth()-1), 
+                                                Math.min(y + PIXEL_SIZE/2, getHeight()-1));
+                    g2d.setColor(new java.awt.Color(rgb, true));
+                    g2d.fillRect(x, y, PIXEL_SIZE, PIXEL_SIZE);
+                }
+            }
+            g2d.dispose();
+        }
+    }
+
+    PixelatePanel pixelatePanel = new PixelatePanel();
+    targetWindow.setGlassPane(pixelatePanel);
+
+    targetWindow.getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(javax.swing.KeyStroke.getKeyStroke("F12"), "toggleEffect");
+    targetWindow.getRootPane().getActionMap().put("toggleEffect", new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            boolean newState = !pixelatePanel.effectEnabled;
+            pixelatePanel.setEffectEnabled(newState);
+            pixelatePanel.setVisible(newState);
+            started = newState;
+        }
+    });
+
+    pixelatePanel.setVisible(true);
+    pixelatePanel.setEffectEnabled(true);
+});
+
+started = true;
+return true;
+}
+
+boolean started = false;
+{
