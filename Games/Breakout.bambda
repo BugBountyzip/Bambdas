@@ -1,0 +1,202 @@
+
+/**
+ * Breakout Game - First Game to Run Inside Burp Suite
+ * --------------------------------------------------------------------------
+ * Author: Tur24Tur / BugBountyZip
+ * Date: 9/16/2024
+ */
+
+class BreakoutGame {
+    public static boolean started = false;
+}
+
+if (BreakoutGame.started) {
+    return true;
+}
+
+javax.swing.SwingUtilities.invokeLater(() -> {
+    class Breakout extends javax.swing.JPanel implements java.awt.event.ActionListener, java.awt.event.KeyListener, java.awt.event.MouseMotionListener {
+        private final int WIDTH = 600, HEIGHT = 400;
+        private final int PADDLE_WIDTH = 80, PADDLE_HEIGHT = 10;
+        private final int BALL_SIZE = 10;
+        private final int BRICK_ROWS = 5, BRICK_COLUMNS = 8;
+        private final int BRICK_WIDTH = WIDTH / BRICK_COLUMNS, BRICK_HEIGHT = 20;
+
+        private int paddleX = WIDTH / 2 - PADDLE_WIDTH / 2;
+        private double ballX = WIDTH / 2, ballY = HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 1;
+        private double ballXSpeed = 3, ballYSpeed = -3;
+        private final double MAX_BALL_SPEED = 5;
+        private boolean[][] bricks = new boolean[BRICK_ROWS][BRICK_COLUMNS];
+        private int score = 0;
+        private boolean gameOver = false;
+        private boolean gameWon = false;
+        private javax.swing.Timer timer;
+
+        public Breakout() {
+            this.setPreferredSize(new java.awt.Dimension(WIDTH, HEIGHT));
+            this.setBackground(java.awt.Color.BLACK);
+            this.setFocusable(true);
+            this.addKeyListener(this);
+            this.addMouseMotionListener(this);
+            initializeBricks();
+            timer = new javax.swing.Timer(10, this);
+            timer.start();
+        }
+
+        private void initializeBricks() {
+            for (int i = 0; i < BRICK_ROWS; i++) {
+                for (int j = 0; j < BRICK_COLUMNS; j++) {
+                    bricks[i][j] = true;
+                }
+            }
+        }
+
+        public void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            g.setColor(java.awt.Color.WHITE);
+
+            g.fillRect(paddleX, HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT);
+
+            g.fillOval((int)ballX, (int)ballY, BALL_SIZE, BALL_SIZE);
+
+            
+            for (int i = 0; i < BRICK_ROWS; i++) {
+                for (int j = 0; j < BRICK_COLUMNS; j++) {
+                    if (bricks[i][j]) {
+                        g.setColor(new java.awt.Color(255 - i * 40, i * 40, 100 + i * 20));
+                        g.fillRect(j * BRICK_WIDTH, i * BRICK_HEIGHT, BRICK_WIDTH - 1, BRICK_HEIGHT - 1);
+                    }
+                }
+            }
+
+            
+            g.setColor(java.awt.Color.WHITE);
+            g.drawString("Score: " + score, 10, HEIGHT - 10);
+
+            if (gameOver) {
+                g.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
+                g.drawString("Game Over!", WIDTH / 2 - 60, HEIGHT / 2 - 30);
+                g.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 16));
+                g.drawString("Press R to restart", WIDTH / 2 - 70, HEIGHT / 2 + 10);
+                g.drawString("Press F to contact me on X", WIDTH / 2 - 100, HEIGHT / 2 + 40);
+            } else if (gameWon) {
+                g.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
+                g.drawString("You Won!", WIDTH / 2 - 50, HEIGHT / 2 - 30);
+                g.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 16));
+                g.drawString("Press R to play again", WIDTH / 2 - 80, HEIGHT / 2 + 10);
+            }
+        }
+
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            if (!gameOver && !gameWon) {
+                moveBall();
+                checkCollision();
+                checkWinCondition();
+                repaint();
+            }
+        }
+
+        private void moveBall() {
+            ballX += ballXSpeed;
+            ballY += ballYSpeed;
+        }
+
+        private void checkCollision() {
+            // ball collision with walls
+            if (ballX <= 0 || ballX >= WIDTH - BALL_SIZE) {
+                ballXSpeed = -ballXSpeed;
+            }
+            if (ballY <= 0) {
+                ballYSpeed = -ballYSpeed;
+            }
+
+           
+            if (ballY >= HEIGHT - PADDLE_HEIGHT - BALL_SIZE && ballX + BALL_SIZE >= paddleX && ballX <= paddleX + PADDLE_WIDTH) {
+                ballYSpeed = -Math.abs(ballYSpeed); 
+                
+                ballXSpeed = (ballX - (paddleX + PADDLE_WIDTH / 2)) / 10;
+                
+                ballXSpeed = Math.max(-MAX_BALL_SPEED, Math.min(MAX_BALL_SPEED, ballXSpeed));
+                ballYSpeed = Math.max(-MAX_BALL_SPEED, Math.min(MAX_BALL_SPEED, ballYSpeed));
+            }
+
+            
+            int brickX = (int)(ballX / BRICK_WIDTH);
+            int brickY = (int)(ballY / BRICK_HEIGHT);
+            if (brickX >= 0 && brickX < BRICK_COLUMNS && brickY >= 0 && brickY < BRICK_ROWS) {
+                if (bricks[brickY][brickX]) {
+                    bricks[brickY][brickX] = false;
+                    ballYSpeed = -ballYSpeed;
+                    score += 10;
+                    
+                    return;
+                }
+            }
+
+            // here to check for game over
+            if (ballY >= HEIGHT - BALL_SIZE) {
+                gameOver = true;
+            }
+        }
+
+        private void checkWinCondition() {
+            for (boolean[] row : bricks) {
+                for (boolean brick : row) {
+                    if (brick) {
+                        return; // if any brick is still present the game is not won 
+                    }
+                }
+            }
+            gameWon = true; 
+        }
+
+        public void keyPressed(java.awt.event.KeyEvent e) {
+            if (gameOver || gameWon) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_R) {
+                    restartGame();
+                } else if (e.getKeyCode() == java.awt.event.KeyEvent.VK_F) {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(new java.net.URI("https://x.com/tur24tur"));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        private void restartGame() {
+            gameOver = false;
+            gameWon = false;
+            score = 0;
+            ballX = WIDTH / 2;
+            ballY = HEIGHT - PADDLE_HEIGHT - BALL_SIZE - 1;
+            ballXSpeed = 3;
+            ballYSpeed = -3;
+            initializeBricks();
+            timer.start();
+        }
+
+        public void mouseMoved(java.awt.event.MouseEvent e) {
+            if (!gameOver && !gameWon) {
+                paddleX = e.getX() - PADDLE_WIDTH / 2;
+                paddleX = Math.max(0, Math.min(paddleX, WIDTH - PADDLE_WIDTH));
+            }
+        }
+
+       
+        public void keyTyped(java.awt.event.KeyEvent e) {}
+        public void keyReleased(java.awt.event.KeyEvent e) {}
+        public void mouseDragged(java.awt.event.MouseEvent e) {}
+    }
+// my
+    javax.swing.JFrame frame = new javax.swing.JFrame("Breakout Game Burp Suite Edition | Tur24Tur");
+    frame.setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+    frame.setResizable(false);
+    frame.add(new Breakout());
+    frame.pack();
+    frame.setLocationRelativeTo(null);
+    frame.setVisible(true);
+});
+
+BreakoutGame.started = true;
+return true;
