@@ -1,0 +1,213 @@
+/**
+ * Snake Game in Burp
+ * 
+ * This is a classic Snake game implemented in Java using Swing.
+ * The player controls a snake that grows longer as it eats food,
+ * while avoiding collisions with its own body.
+ * How to Play:
+ * 1. use W (up), A (left), S (down), D (right) to control the snake
+ * 2. eat the food to grow longer and increase your score
+ * 3. avoid running into your own body
+ * 4. try to achieve the highest score possible
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ */
+
+if (started) {
+    return true;
+}
+
+javax.swing.SwingUtilities.invokeLater(() -> {
+    class SnakeGame extends javax.swing.JPanel {
+        private final int WIDTH = 400;
+        private final int HEIGHT = 400;
+        private final int UNIT_SIZE = 20;
+        private final int GAME_UNITS = (WIDTH * HEIGHT) / (UNIT_SIZE * UNIT_SIZE);
+        private final int[] x = new int[GAME_UNITS];
+        private final int[] y = new int[GAME_UNITS];
+        private int bodyParts = 6;
+        private int foodEaten;
+        private int foodX;
+        private int foodY;
+        private char direction = 'R';
+        private boolean running = false;
+        private java.util.Random random;
+        private javax.swing.Timer timer;
+        private java.awt.Image foodImage;
+        private javax.swing.JPanel gameOverPanel;
+
+        public SnakeGame() {
+            random = new java.util.Random();
+            this.setPreferredSize(new java.awt.Dimension(WIDTH, HEIGHT));
+            this.setBackground(java.awt.Color.BLACK);
+            this.setFocusable(true);
+            this.setLayout(null);
+            this.addKeyListener(new java.awt.event.KeyAdapter() {
+                @Override
+                public void keyPressed(java.awt.event.KeyEvent e) {
+                    switch (e.getKeyCode()) {
+                        case java.awt.event.KeyEvent.VK_W: if (direction != 'D') direction = 'U'; break;
+                        case java.awt.event.KeyEvent.VK_S: if (direction != 'U') direction = 'D'; break;
+                        case java.awt.event.KeyEvent.VK_A: if (direction != 'R') direction = 'L'; break;
+                        case java.awt.event.KeyEvent.VK_D: if (direction != 'L') direction = 'R'; break;
+                    }
+                }
+            });
+            loadFoodImage();
+            startGame();
+        }
+
+        private void loadFoodImage() {
+            try {
+                java.net.URL imageUrl = new java.net.URL("https://raw.githubusercontent.com/BugBountyzip/Bambdas/main/img/food.png");
+                foodImage = javax.imageio.ImageIO.read(imageUrl);
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void startGame() {
+            newFood();
+            running = true;
+            timer = new javax.swing.Timer(100, e -> {
+                if (running) {
+                    move();
+                    checkFood();
+                    checkCollisions();
+                }
+                repaint();
+            });
+            timer.start();
+        }
+
+        public void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            draw(g);
+        }
+
+        public void draw(java.awt.Graphics g) {
+            if (running) {
+                if (foodImage != null) {
+                    g.drawImage(foodImage, foodX, foodY, UNIT_SIZE, UNIT_SIZE, this);
+                } else {
+                    g.setColor(java.awt.Color.RED);
+                    g.fillOval(foodX, foodY, UNIT_SIZE, UNIT_SIZE);
+                }
+
+                for (int i = 0; i < bodyParts; i++) {
+                    g.setColor(new java.awt.Color(128, 0, 128)); // purple color
+                    g.fillRect(x[i], y[i], UNIT_SIZE, UNIT_SIZE);
+                }
+
+                g.setColor(java.awt.Color.WHITE);
+                g.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
+                g.drawString("Score: " + foodEaten, 10, 30);
+            }
+        }
+
+        public void newFood() {
+            foodX = random.nextInt(WIDTH / UNIT_SIZE) * UNIT_SIZE;
+            foodY = random.nextInt(HEIGHT / UNIT_SIZE) * UNIT_SIZE;
+        }
+
+        public void move() {
+            for (int i = bodyParts; i > 0; i--) {
+                x[i] = x[i - 1];
+                y[i] = y[i - 1];
+            }
+
+            switch (direction) {
+                case 'U': y[0] = (y[0] - UNIT_SIZE + HEIGHT) % HEIGHT; break;
+                case 'D': y[0] = (y[0] + UNIT_SIZE) % HEIGHT; break;
+                case 'L': x[0] = (x[0] - UNIT_SIZE + WIDTH) % WIDTH; break;
+                case 'R': x[0] = (x[0] + UNIT_SIZE) % WIDTH; break;
+            }
+        }
+
+        public void checkFood() {
+            if ((x[0] == foodX) && (y[0] == foodY)) {
+                bodyParts++;
+                foodEaten++;
+                newFood();
+            }
+        }
+
+        public void checkCollisions() {
+            for (int i = bodyParts; i > 0; i--) {
+                if ((x[0] == x[i]) && (y[0] == y[i])) {
+                    running = false;
+                    break;
+                }
+            }
+
+            if (!running) {
+                timer.stop();
+                showGameOverScreen();
+            }
+        }
+
+        public void showGameOverScreen() {
+            if (gameOverPanel != null) {
+                this.remove(gameOverPanel);
+            }
+
+            gameOverPanel = new javax.swing.JPanel();
+            gameOverPanel.setLayout(null);
+            gameOverPanel.setBounds(0, 0, WIDTH, HEIGHT);
+            gameOverPanel.setOpaque(false);
+
+            javax.swing.JLabel gameOverLabel = new javax.swing.JLabel("You Lost");
+            gameOverLabel.setForeground(java.awt.Color.RED);
+            gameOverLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 40));
+            gameOverLabel.setBounds(WIDTH / 2 - 100, HEIGHT / 2 - 50, 200, 40);
+            gameOverPanel.add(gameOverLabel);
+
+            javax.swing.JLabel scoreLabel = new javax.swing.JLabel("Score: " + foodEaten);
+            scoreLabel.setForeground(java.awt.Color.WHITE);
+            scoreLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
+            scoreLabel.setBounds(WIDTH / 2 - 40, HEIGHT / 2, 100, 20);
+            gameOverPanel.add(scoreLabel);
+
+            javax.swing.JButton retryButton = new javax.swing.JButton("Retry");
+            retryButton.setBounds(WIDTH / 2 - 100, HEIGHT / 2 + 30, 80, 30);
+            retryButton.addActionListener(e -> {
+                this.remove(gameOverPanel);
+                bodyParts = 6;
+                foodEaten = 0;
+                direction = 'R';
+                startGame();
+                this.requestFocusInWindow();
+            });
+            gameOverPanel.add(retryButton);
+
+            javax.swing.JButton followButton = new javax.swing.JButton("Follow me");
+            followButton.setBounds(WIDTH / 2 + 20, HEIGHT / 2 + 30, 100, 30);
+            followButton.addActionListener(e -> {
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI("https://x.com/Tur24Tur"));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+            gameOverPanel.add(followButton);
+
+            this.add(gameOverPanel);
+            this.revalidate();
+            this.repaint();
+        }
+    }
+
+    javax.swing.JFrame frame = new javax.swing.JFrame("Snake Game");
+    frame.setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+    frame.setResizable(false);
+    frame.add(new SnakeGame());
+    frame.pack();
+    frame.setLocationRelativeTo(null);
+    frame.setVisible(true);
+});
+
+started = true;
+return true;
+}
+
+boolean started = false;
+{
