@@ -1,0 +1,177 @@
+/**
+ * SQL Injection Lab: Login Bypass Vulnerability
+ * https://portswigger.net/web-security/sql-injection/lab-login-bypass
+ * Lab Objective:
+ * Perform a SQL injection attack to bypass the login mechanism and gain
+ * access as the 'admin' user. Then, use the admin privileges to delete
+ * the user 'carlos'.
+ * 
+ * Note: This lab is for educational purposes only and demonstrates
+ * the importance of proper input validation and parameterized queries
+ * in preventing SQL injection attacks.
+ * 
+ * @author Tur24Tur / BugBountyzip (https://github.com/BugBountyzip)
+ * Bye :D 
+ * 13 December 2023 - 04  October 2024
+ */
+
+
+ boolean started = false;
+
+ {
+     if (started) {
+         return true;
+     }
+ 
+     javax.swing.SwingUtilities.invokeLater(() -> {
+         // login page
+         javax.swing.JFrame loginFrame = new javax.swing.JFrame("SQL Injection Lab by BugBountyZip - Login");
+         loginFrame.setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+         loginFrame.setSize(400, 300);
+         loginFrame.setResizable(false);
+         loginFrame.setLocationRelativeTo(null);
+         
+         
+         javax.swing.JPanel panel = new javax.swing.JPanel();
+         panel.setLayout(null);
+         
+         // username 
+         javax.swing.JLabel userLabel = new javax.swing.JLabel("Username:");
+         userLabel.setBounds(50, 50, 80, 25);
+         panel.add(userLabel);
+         
+         javax.swing.JTextField userText = new javax.swing.JTextField(20);
+         userText.setBounds(150, 50, 165, 25);
+         userText.setName("usernameField");
+         panel.add(userText);
+         
+         // pass 
+         javax.swing.JLabel passwordLabel = new javax.swing.JLabel("Password:");
+         passwordLabel.setBounds(50, 100, 80, 25);
+         panel.add(passwordLabel);
+         
+         javax.swing.JPasswordField passwordText = new javax.swing.JPasswordField(20);
+         passwordText.setBounds(150, 100, 165, 25);
+         passwordText.setName("passwordField");
+         panel.add(passwordText);
+         
+         // button
+         javax.swing.JButton loginButton = new javax.swing.JButton("Login");
+         loginButton.setBounds(150, 150, 80, 25);
+         loginButton.setName("loginButton");
+         panel.add(loginButton);
+         
+         
+         loginFrame.add(panel);
+         loginFrame.setVisible(true);
+         
+         
+         loginButton.addActionListener(e -> {
+             String username = userText.getText();
+             String password = new String(passwordText.getPassword());
+             
+             // vulnerable SQL query
+             String query = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
+             
+             // SQL Injection detection
+             boolean isAuthenticated = false;
+             String lowerQuery = query.toLowerCase();
+             
+             // check 
+             if (lowerQuery.contains("' or '1'='1") ||
+                 lowerQuery.contains("' or 1=1") ||
+                 lowerQuery.contains("' or 'a'='a") ||
+                 lowerQuery.contains("') or ('1'='1") ||
+                 lowerQuery.contains("admin'--") ||
+                 lowerQuery.contains("' union select") ||
+                 lowerQuery.contains("' having 1=1") ||
+                 lowerQuery.contains("' group by") ||
+                 lowerQuery.matches(".*'\\s+or\\s+\\d+\\s*=\\s*\\d+.*")) {
+                 isAuthenticated = true; // SQL Injection detected
+             } else if (username.equals("admin") && password.equals("admin123")) {
+                 isAuthenticated = true; 
+             }
+             
+             if (isAuthenticated) {
+                 
+                 loginFrame.dispose(); 
+                 
+                 //  Dashboard 
+                 javax.swing.JFrame dashboardFrame = new javax.swing.JFrame("SQL Injection Lab - Dashboard");
+                 dashboardFrame.setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+                 dashboardFrame.setSize(400, 200);
+                 dashboardFrame.setResizable(false);
+                 dashboardFrame.setLocationRelativeTo(null);
+                 
+                 javax.swing.JPanel dashboardPanel = new javax.swing.JPanel();
+                 dashboardPanel.setLayout(null);
+                 
+                 javax.swing.JLabel welcomeLabel = new javax.swing.JLabel("Welcome! Click the button to delete Carlos.");
+                 welcomeLabel.setBounds(50, 50, 300, 25);
+                 dashboardPanel.add(welcomeLabel);
+                 
+                 javax.swing.JButton deleteButton = new javax.swing.JButton("Delete Carlos");
+                 deleteButton.setBounds(150, 100, 120, 25);
+                 deleteButton.setName("deleteCarlosButton");
+                 dashboardPanel.add(deleteButton);
+                 
+                 deleteButton.addActionListener(ev -> {
+                     dashboardFrame.dispose();
+                     
+                     //  Success 
+                     javax.swing.JFrame successFrame = new javax.swing.JFrame("SQL Injection Lab - Success");
+                     successFrame.setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+                     successFrame.setSize(400, 300);
+                     successFrame.setResizable(false);
+                     successFrame.setLocationRelativeTo(null);
+                     
+                     javax.swing.JPanel successPanel = new javax.swing.JPanel();
+                     successPanel.setLayout(null);
+                     successPanel.setBackground(java.awt.Color.DARK_GRAY);
+                     
+                     javax.swing.JLabel successLabel = new javax.swing.JLabel("Congratulations! Lab Solved.");
+                     successLabel.setBounds(50, 100, 300, 25);
+                     successLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
+                     successLabel.setForeground(java.awt.Color.ORANGE);
+                     successLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                     successPanel.add(successLabel);
+                     
+                     javax.swing.JLabel animationLabel = new javax.swing.JLabel("🎉");
+                     animationLabel.setBounds(180, 130, 40, 40);
+                     successPanel.add(animationLabel);
+                     
+                     javax.swing.Timer animationTimer = new javax.swing.Timer(100, null);
+                     animationTimer.addActionListener(new java.awt.event.ActionListener() {
+                         int xPos = 180;
+                         int direction = 1;
+                         
+                         @Override
+                         public void actionPerformed(java.awt.event.ActionEvent ev2) {
+                             xPos += direction * 5;
+                             if (xPos > 200 || xPos < 160) {
+                                 direction *= -1;
+                             }
+                             animationLabel.setLocation(xPos, 130);
+                         }
+                     });
+                     animationTimer.start();
+                     
+                     successFrame.add(successPanel);
+                     successFrame.setVisible(true);
+                 });
+                 
+                 dashboardFrame.add(dashboardPanel);
+                 dashboardFrame.setVisible(true);
+             } else {
+                 
+                 javax.swing.JOptionPane.showMessageDialog(loginFrame,
+                         "Invalid credentials or SQL Injection attempt failed.",
+                         "Login Failed",
+                         javax.swing.JOptionPane.ERROR_MESSAGE);
+             }
+         });
+     });
+     
+     started = true;
+     return true;
+ }
